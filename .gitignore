@@ -36,6 +36,11 @@ env/
 *.swo
 *~
 
+# Node / frontend
+node_modules/
+.next/
+out/
+
 # OS
 .DS_Store
 Thumbs.db
