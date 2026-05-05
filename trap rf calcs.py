@@ -32,6 +32,12 @@ from scipy.interpolate import CloughTocher2DInterpolator
 
 # %%
 
+COMSOL_DATA_DIR = "trap sim using COMSOL from IU"
+
+
+def comsol_data_path(file_name):
+    return os.path.join(COMSOL_DATA_DIR, file_name)
+
 folder = 'wheel trap/v0/'
 file_name = folder + 'zx_plane_normE_allrf_v03mm_refined2'
 
@@ -215,9 +221,9 @@ class DCElectrode(DataHandler):
         #edit here 
 
         # Construct file names using electrode number
-        xy_file_name = "DC" + str(electrode_number) + "_XY.txt"
-        yz_file_name = "DC" + str(electrode_number) + "_YZ.txt"
-        zx_file_name = "DC" + str(electrode_number) + "_XZ.txt"
+        xy_file_name = comsol_data_path("DC" + str(electrode_number) + "_XY.txt")
+        yz_file_name = comsol_data_path("DC" + str(electrode_number) + "_YZ.txt")
+        zx_file_name = comsol_data_path("DC" + str(electrode_number) + "_XZ.txt")
         
         # Load data from each file above
         self.xy_data = self._load_data(xy_file_name)
@@ -256,9 +262,9 @@ class RFElectrode(DataHandler):
         ###########################
         
         # Old'
-        xy_file_name = "RF_XY"
-        yz_file_name = "RX_YZ"
-        zx_file_name = "RF_XZ"        
+        xy_file_name = comsol_data_path("RF_XY.txt")
+        yz_file_name = comsol_data_path("RF_YZ.txt")
+        zx_file_name = comsol_data_path("RF_XZ.txt")        
         
         # New
         # folder = 'wheel trap/v0/'
@@ -385,7 +391,7 @@ rf1 = stack.get_rf_electrode()
 
 # Unpack the list of DC electrodes for direct access (to use dc1.xyf(0, 0) for example)
 # Uncomment only the number of electrodes that you are creating
-# dc1 = stack.get_dc_electrode(1)
+dc1 = stack.get_dc_electrode(1)
 
 # %%
 
@@ -580,11 +586,10 @@ print("At the point (um):", np.round((result_z.x-zCtr)*1000,10))
 
 
 #%% 2D plots
+nvals = 500
 x = np.linspace(xMin, xMax, nvals)
 y = np.linspace(yMin, yMax, nvals)
 z = np.linspace(zMin, zMax, nvals)
-
-nvals = 500
 
 #%% 2D RF 
 
@@ -975,8 +980,6 @@ plt.show()
 # x_coeffs_rev = x_coeffs[::-1]
 
 x = np.linspace(-0.25, 0.25, 100)
-Vx = sum([x_coeffs_rev[j] * (x**j) for j in range(len(x_coeffs_rev))])
-Vx = sum([x_coeffs[j] * (x**(6-j)) for j in range(len(x_coeffs))])
 Vx = np.polyval(x_coeffs, x)
 
 plt.plot(x, Vx)
@@ -988,8 +991,6 @@ plt.show()
 # y_coeffs_rev = y_coeffs[::-1]
 
 y = np.linspace(-0.03, 0.03, 100)
-Vy = sum([y_coeffs_rev[j] * (y**j) for j in range(len(y_coeffs_rev))])
-Vy = sum([y_coeffs[j] * (y**(6-j)) for j in range(len(y_coeffs))])
 Vy = np.polyval(y_coeffs, y)
 
 plt.plot(y, Vy)
@@ -1001,8 +1002,6 @@ plt.show()
 # z_coeffs_rev = z_coeffs[::-1]
 
 z = np.linspace(-0.03, 0.03, 100)
-Vz = sum([z_coeffs_rev[j] * (z**j) for j in range(len(z_coeffs_rev))])
-Vz = sum([z_coeffs[j] * (z**(6-j)) for j in range(len(z_coeffs))])
 Vz = np.polyval(z_coeffs, z)
 
 plt.plot(z, Vz)
