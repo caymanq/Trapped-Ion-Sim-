@@ -80,6 +80,12 @@ function fmtTick(n: number) {
 }
 
 function electrodeOutlineD(e: Electrode, sx: (x: number) => number, sy: (y: number) => number) {
+  if (e.outline && e.outline.length >= 3) {
+    return e.outline
+      .map(([x, y], index) => `${index === 0 ? "M" : "L"} ${sx(x).toFixed(2)},${sy(y).toFixed(2)}`)
+      .join(" ")
+      .concat(" Z");
+  }
   const xL = e.cx - e.width / 2;
   const xR = e.cx + e.width / 2;
   const yT = e.cy + e.height / 2;
@@ -307,12 +313,55 @@ type Props = {
   electrodes: Electrode[];
   result: SimulationResponse | null;
   presetLabel?: string;
+  showBowl?: boolean;
 };
 
 /** Pseudopotential panel half-extent ± this value (µm) around (0,0). */
 export const PSEUDO_PANEL_HALF_WIDTH_UM = 250;
 
-export function TrapPlots({ electrodes, result, presetLabel }: Props) {
+function BowlFigure({ result }: { result: SimulationResponse }) {
+  const xs = result.x_um;
+  const ys = result.y_um;
+  const grid = result.pseudopotential_micro_ev;
+  const extent = 120;
+  const xr = findSubRange(xs, -extent, extent);
+  const yr = findSubRange(ys, -extent, extent);
+  if (!xr || !yr) return null;
+  const [x0, x1] = xr;
+  const [y0, y1] = yr;
+  const crop = grid.slice(y0, y1 + 1).map((row) => row.slice(x0, x1 + 1));
+  const flat = crop.flat().filter(Number.isFinite);
+  const min = Math.min(...flat);
+  const max = Math.max(...flat);
+  const span = Math.max(max - min, 1e-12);
+  const width = 360;
+  const height = 210;
+  const cells = crop.flatMap((row, iy) =>
+    row.map((value, ix) => {
+      const x = (ix / Math.max(row.length - 1, 1)) * width;
+      const y = (iy / Math.max(crop.length - 1, 1)) * height;
+      const lift = ((value - min) / span) * 70;
+      return { x, y: y - lift, value };
+    })
+  );
+  return (
+    <div className="bowl-wrap">
+      <div className="figure-title">local pseudopotential bowl</div>
+      <svg className="bowl-svg" viewBox={`0 -80 ${width} ${height + 90}`} role="img" aria-label="Local pseudopotential bowl">
+        <rect x="0" y="-80" width={width} height={height + 90} fill="#fff" />
+        {cells.map((cell, i) => (
+          <circle key={i} cx={cell.x} cy={cell.y} r="1.8" fill={viridis((cell.value - min) / span)} opacity="0.78" />
+        ))}
+        <line x1="0" x2={width} y1={height} y2={height} stroke="#555" strokeWidth="0.8" />
+        <text x={width / 2} y={height + 16} textAnchor="middle" className="figure-axis-label">
+          smoothed local view ±{extent} µm (visual only)
+        </text>
+      </svg>
+    </div>
+  );
+}
+
+export function TrapPlots({ electrodes, result, presetLabel, showBowl = false }: Props) {
   const label = presetLabel?.trim() || "Trap";
 
   if (!result?.x_um?.length || !result.potential.length) {
@@ -350,7 +399,8 @@ export function TrapPlots({ electrodes, result, presetLabel }: Props) {
   const ch: [number, number] = [0, 0];
 
   return (
-    <div className="plots-row">
+    <>
+      <div className="plots-row">
       <HeatmapFigure
         title={`${label} — φ_RF`}
         xLabel="x (µm)"
@@ -386,6 +436,8 @@ export function TrapPlots({ electrodes, result, presetLabel }: Props) {
         circleWorld={{ cx: 0, cy: 0, r: 90 }}
         formatColorTick={(v) => fmtTick(v)}
       />
-    </div>
+      </div>
+      {showBowl && result ? <BowlFigure result={result} /> : null}
+    </>
   );
 }

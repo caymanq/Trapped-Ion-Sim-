@@ -13,13 +13,18 @@ def discretize_electrodes(electrodes: list[Electrode], n_per_side: int = 18) -> 
     lengths: list[float] = []
     potentials: list[float] = []
     for electrode in electrodes:
-        x0, x1 = electrode.cx - electrode.width / 2.0, electrode.cx + electrode.width / 2.0
-        y0, y1 = electrode.cy - electrode.height / 2.0, electrode.cy + electrode.height / 2.0
-        corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+        if electrode.outline and len(electrode.outline) >= 3:
+            corners = electrode.outline
+            scale = max(electrode.width, electrode.height)
+        else:
+            x0, x1 = electrode.cx - electrode.width / 2.0, electrode.cx + electrode.width / 2.0
+            y0, y1 = electrode.cy - electrode.height / 2.0, electrode.cy + electrode.height / 2.0
+            corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+            scale = max(electrode.width, electrode.height)
         for index, (ax, ay) in enumerate(corners):
-            bx, by = corners[(index + 1) % 4]
+            bx, by = corners[(index + 1) % len(corners)]
             side_len = float(np.hypot(bx - ax, by - ay))
-            n = max(2, int(round(n_per_side * side_len / max(electrode.width, electrode.height))))
+            n = max(2, int(round(n_per_side * side_len / max(scale, 1.0))))
             for j in range(n):
                 t = (j + 0.5) / n
                 positions.append((ax + t * (bx - ax), ay + t * (by - ay)))

@@ -6,6 +6,7 @@ from .bem_solver import solve_laplace_bem
 from .constants import DEFAULT_DOMAIN_UM, DEFAULT_GRID_SIZE
 from .fd_solver import solve_laplace_fd
 from .geometry import apply_hyperbolic_slider, get_preset
+from .metrics import derived_metrics
 from .models import Electrode, SimulationRequest, SimulationResponse
 from .multipole import fit_multipole_ratios
 from .pseudopotential import compute_pseudopotential_micro_ev, trap_depth_micro_ev
@@ -13,6 +14,10 @@ from .validation import validate_solution
 
 
 def _resolve_electrodes(request: SimulationRequest) -> list[Electrode]:
+    if request.u_channel:
+        from .u_channel import generate_u_channel
+
+        return generate_u_channel(request.u_channel).electrodes
     if request.electrodes:
         return request.electrodes
     if request.preset_id:
@@ -38,6 +43,7 @@ def simulate_trap(request: SimulationRequest) -> SimulationResponse:
     )
     depth = trap_depth_micro_ev(pseudo, x_um, y_um, ion=(0.0, 0.0))
     multipole_ratios = fit_multipole_ratios(pseudo, x_um, y_um, ion=(0.0, 0.0))
+    metrics = derived_metrics(pseudo, x_um, y_um, ion_mass_amu=request.ion_mass_amu, ion=(0.0, 0.0))
     validation = validate_solution(potential, x_um, y_um, X, Y, electrodes, fixed)
 
     warnings = list(validation.warnings)
@@ -51,6 +57,7 @@ def simulate_trap(request: SimulationRequest) -> SimulationResponse:
         rf_null_um=(0.0, 0.0),
         trap_depth_micro_ev=depth,
         multipole_ratios=multipole_ratios,
+        metrics=metrics,
         validation=validation,
         warnings=warnings,
     )

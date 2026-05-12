@@ -167,8 +167,33 @@ def apply_hyperbolic_slider(electrodes: list[Electrode], slider: float) -> list[
     return [electrode.model_copy(update={"curvature": max(electrode.curvature, slider)}) for electrode in electrodes]
 
 
+def polygon_mask(outline: list[tuple[float, float]], x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    """Rasterise a polygon outline on the supplied meshgrid using ray crossing."""
+    if len(outline) < 3:
+        return np.zeros_like(x, dtype=bool)
+    px = np.asarray([p[0] for p in outline], dtype=float)
+    py = np.asarray([p[1] for p in outline], dtype=float)
+    inside = np.zeros_like(x, dtype=bool)
+    j = len(outline) - 1
+    for i in range(len(outline)):
+        yi, yj = py[i], py[j]
+        xi, xj = px[i], px[j]
+        crosses = (yi > y) != (yj > y)
+        denom = yj - yi
+        denom = denom if abs(denom) > 1.0e-15 else 1.0e-15
+        x_intersect = (xj - xi) * (y - yi) / denom + xi
+        inside ^= crosses & (x < x_intersect)
+        j = i
+    return inside
+
+
 def electrode_mask(electrode: Electrode, x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """Rasterise rectangular or mildly hyperbolic electrodes onto a meshgrid."""
+    if electrode.outline:
+        mask = polygon_mask(electrode.outline, x, y)
+        if mask.any():
+            return mask
+
     x_rel = x - electrode.cx
     y_rel = y - electrode.cy
     half_h = electrode.height / 2.0

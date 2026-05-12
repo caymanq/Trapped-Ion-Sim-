@@ -8,6 +8,17 @@ export type Electrode = {
   height: number;
   voltage: number;
   curvature: number;
+  outline?: [number, number][] | null;
+};
+
+export type UChannelParameters = {
+  opening_width: number;
+  blade_height: number;
+  blade_thickness: number;
+  gap_to_ion: number;
+  bezier_curvature: number;
+  blade_angle_deg: number;
+  rf_voltage: number;
 };
 
 export type TrapPreset = {
@@ -28,6 +39,17 @@ export type SimulationResponse = {
   rf_null_um: [number, number];
   trap_depth_micro_ev: number;
   multipole_ratios: Record<string, number>;
+  metrics: {
+    secular?: {
+      omega_rad_s: [number, number];
+      frequency_hz: [number, number];
+      principal_axes_deg: [number, number];
+    } | null;
+    harmonicity?: {
+      quartic_to_quadratic: number;
+      fit_radius_um: number;
+    } | null;
+  };
   validation: {
     laplace_passed: boolean;
     laplace_bulk_passed: boolean;
@@ -52,8 +74,9 @@ export async function getTraps(): Promise<TrapPreset[]> {
 }
 
 export async function simulateTrap(input: {
-  preset_id: string;
-  electrodes: Electrode[];
+  preset_id?: string;
+  electrodes?: Electrode[];
+  u_channel?: UChannelParameters;
   solver: "fd" | "bem";
   hyperbolic_slider: number;
   grid_size: number;
@@ -65,6 +88,33 @@ export async function simulateTrap(input: {
   });
   if (!response.ok) {
     throw new Error(`Simulation failed: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function sweepUChannel(input: {
+  base: UChannelParameters;
+  parameter: keyof UChannelParameters;
+  values: number[];
+  grid_size: number;
+  domain_um?: number;
+}): Promise<{
+  parameter: string;
+  points: {
+    parameter_value: number;
+    trap_depth_micro_ev: number;
+    multipole_ratios: Record<string, number>;
+    metrics: SimulationResponse["metrics"];
+    warnings: string[];
+  }[];
+}> {
+  const response = await fetch(`${API_BASE}/u-channel/sweep`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  if (!response.ok) {
+    throw new Error(`Sweep failed: ${response.statusText}`);
   }
   return response.json();
 }
