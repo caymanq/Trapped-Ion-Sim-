@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getTraps, simulateTrap, type Electrode, type SimulationResponse, type TrapPreset } from "../lib/api";
-import { TrapCanvas } from "./TrapCanvas";
+import { PSEUDO_PANEL_HALF_WIDTH_UM, TrapPlots } from "./TrapPlots";
 
 export function TrapBuilder() {
   const [presets, setPresets] = useState<TrapPreset[]>([]);
@@ -61,11 +61,10 @@ export function TrapBuilder() {
     <main className="page">
       <header className="hero">
         <div>
-          <p className="eyebrow">Ion Trap Sim</p>
-          <h1>Pseudopotential cross-section · RF null · multipole ratios</h1>
+          <p className="eyebrow">Ion trap · finite difference / BEM</p>
+          <h1>RF potential and pseudopotential (cross-section)</h1>
           <p>
-            Edit geometries in the right rail; pseudopotential and diagnostics render in the viewport to the left. The Python compute API delivers the RF solve,
-            trap depth µeV, and validation flags.
+            Set parameters at right and run simulation. Figures use a matplotlib-like layout: RdBu diverging colors for φ<sub>RF</sub>, viridis-like sequential colors for pseudopotential (µeV), black electrode outlines, and a red crosshair at the origin.
           </p>
         </div>
         <button onClick={runSimulation} disabled={busy || electrodes.length === 0}>
@@ -78,31 +77,16 @@ export function TrapBuilder() {
       <section className="workspace">
         <section className="panel result">
           <div className="result-header">
-            <h2>Pseudopotential field (μm)</h2>
+            <h2>Plots</h2>
             <div className="depth-card">
               <span>Trap depth</span>
-              <strong>{result ? `${result.trap_depth_micro_ev.toLocaleString(undefined, { maximumFractionDigits: 2 })} µeV` : "Awaiting run"}</strong>
+              <strong>{result ? `${result.trap_depth_micro_ev.toLocaleString(undefined, { maximumFractionDigits: 2 })} µeV` : "Run simulation"}</strong>
             </div>
           </div>
-          <p className="legend">
-            <span>
-              <span className="legend-dot" style={{ background: "#74606e" }} />
-              RF +
-            </span>
-            <span>
-              <span className="legend-dot" style={{ background: "#5f6f7d" }} />
-              RF −
-            </span>
-            <span>
-              <span className="legend-dot" style={{ background: "#6f7780" }} />
-              Ground
-            </span>
-            <span>
-              <span className="legend-dot" style={{ background: "#8f866f", border: "1px solid rgba(120,130,145,0.5)" }} />
-              Ion / null hint
-            </span>
+          <p className="plot-caption">
+            Pseudopotential panel windows ±{PSEUDO_PANEL_HALF_WIDTH_UM}&nbsp;µm about the origin; dashed green ellipse is a 90&nbsp;µm-radius guide at (0,&nbsp;0).
           </p>
-          <TrapCanvas electrodes={electrodes} result={result} />
+          <TrapPlots electrodes={electrodes} result={result} presetLabel={selected?.name ?? ""} />
           <div className="status-grid">
             <div>
               <span>RF null (µm)</span>
