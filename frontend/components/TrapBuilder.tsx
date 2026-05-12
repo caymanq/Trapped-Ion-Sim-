@@ -61,23 +61,82 @@ export function TrapBuilder() {
     <main className="page">
       <header className="hero">
         <div>
-          <p className="eyebrow">Ion Trap Designer</p>
-          <h1>Build trap geometries and inspect pseudopotentials.</h1>
+          <p className="eyebrow">Ion Trap Sim</p>
+          <h1>Pseudopotential cross-section · RF null · multipole ratios</h1>
           <p>
-            The Vercel frontend edits electrode geometry while the Python compute API returns the RF solution,
-            pseudopotential, trap depth, and physics validation.
+            Edit geometries in the right rail; pseudopotential and diagnostics render in the viewport to the left. The Python compute API delivers the RF solve,
+            trap depth µeV, and validation flags.
           </p>
         </div>
         <button onClick={runSimulation} disabled={busy || electrodes.length === 0}>
-          {busy ? "Solving..." : "Run Simulation"}
+          {busy ? "Solving…" : "Run simulation"}
         </button>
       </header>
 
       {error && <div className="error">{error}</div>}
 
       <section className="workspace">
+        <section className="panel result">
+          <div className="result-header">
+            <h2>Pseudopotential field (μm)</h2>
+            <div className="depth-card">
+              <span>Trap depth</span>
+              <strong>{result ? `${result.trap_depth_micro_ev.toLocaleString(undefined, { maximumFractionDigits: 2 })} µeV` : "Awaiting run"}</strong>
+            </div>
+          </div>
+          <p className="legend">
+            <span>
+              <span className="legend-dot" style={{ background: "#ff4da6" }} />
+              RF +
+            </span>
+            <span>
+              <span className="legend-dot" style={{ background: "#39f9ff" }} />
+              RF −
+            </span>
+            <span>
+              <span className="legend-dot" style={{ background: "#9eb4c8" }} />
+              Ground
+            </span>
+            <span>
+              <span className="legend-dot" style={{ background: "#ff9f1c", border: "1px solid #39f9ff" }} />
+              Ion / null hint
+            </span>
+          </p>
+          <TrapCanvas electrodes={electrodes} result={result} />
+          <div className="status-grid">
+            <div>
+              <span>RF null (µm)</span>
+              <strong>{result ? `(${result.rf_null_um[0].toFixed(2)}, ${result.rf_null_um[1].toFixed(2)})` : "—"}</strong>
+            </div>
+            <div>
+              <span>Laplace bulk</span>
+              <strong className={result?.validation.laplace_bulk_passed ? "pass" : "warn"}>{result ? (result.validation.laplace_bulk_passed ? "PASS" : "FAIL") : "—"}</strong>
+            </div>
+            <div>
+              <span>Electrode ΔV</span>
+              <strong className={result?.validation.electrode_voltage_passed ? "pass" : "warn"}>{result ? (result.validation.electrode_voltage_passed ? "PASS" : "FAIL") : "—"}</strong>
+            </div>
+          </div>
+          {result && (
+            <div className="multipole-grid">
+              {Object.entries(result.multipole_ratios).map(([name, value]) => (
+                <div key={name}>
+                  <span>{name}</span>
+                  <strong>{value.toExponential(2)}</strong>
+                </div>
+              ))}
+            </div>
+          )}
+          {result?.warnings.map((warning) => (
+            <p className="warning" key={warning}>
+              {warning}
+            </p>
+          ))}
+          <p className="hint-footer">NEXT_PUBLIC_ION_TRAP_API_URL must point at your deployed FastAPI host (localhost only works here on your machine).</p>
+        </section>
+
         <aside className="panel builder">
-          <h2>Trap Geometry Builder</h2>
+          <h2>Geometry & solver</h2>
           <label>
             Stored trap preset
             <select value={selectedId} onChange={(event) => choosePreset(event.target.value)}>
@@ -95,7 +154,7 @@ export function TrapBuilder() {
               Solver
               <select value={solver} onChange={(event) => setSolver(event.target.value as "fd" | "bem")}>
                 <option value="fd">Finite difference</option>
-                <option value="bem">BEM reference mode</option>
+                <option value="bem">BEM reference</option>
               </select>
             </label>
             <label>
@@ -105,7 +164,7 @@ export function TrapBuilder() {
           </div>
 
           <label>
-            Hyperbolic electrode shape: {slider.toFixed(2)}
+            Hyperbolic shape · {slider.toFixed(2)}
             <input type="range" min={0} max={1} step={0.05} value={slider} onChange={(event) => setSlider(Number(event.target.value))} />
           </label>
 
@@ -139,46 +198,6 @@ export function TrapBuilder() {
             ))}
           </div>
         </aside>
-
-        <section className="panel result">
-          <div className="result-header">
-            <h2>Pseudopotential View</h2>
-            <div className="depth-card">
-              <span>Trap depth</span>
-              <strong>{result ? `${result.trap_depth_micro_ev.toLocaleString(undefined, { maximumFractionDigits: 2 })} micro eV` : "Run simulation"}</strong>
-            </div>
-          </div>
-          <TrapCanvas electrodes={electrodes} result={result} />
-          <div className="status-grid">
-            <div>
-              <span>RF null</span>
-              <strong>{result ? `(${result.rf_null_um[0].toFixed(2)}, ${result.rf_null_um[1].toFixed(2)}) um` : "Ion at origin"}</strong>
-            </div>
-            <div>
-              <span>Laplace bulk</span>
-              <strong className={result?.validation.laplace_bulk_passed ? "pass" : "warn"}>{result ? (result.validation.laplace_bulk_passed ? "PASS" : "FAIL") : "Pending"}</strong>
-            </div>
-            <div>
-              <span>Electrode voltage</span>
-              <strong className={result?.validation.electrode_voltage_passed ? "pass" : "warn"}>{result ? (result.validation.electrode_voltage_passed ? "PASS" : "FAIL") : "Pending"}</strong>
-            </div>
-          </div>
-          {result && (
-            <div className="multipole-grid">
-              {Object.entries(result.multipole_ratios).map(([name, value]) => (
-                <div key={name}>
-                  <span>{name}</span>
-                  <strong>{value.toExponential(2)}</strong>
-                </div>
-              ))}
-            </div>
-          )}
-          {result?.warnings.map((warning) => (
-            <p className="warning" key={warning}>
-              {warning}
-            </p>
-          ))}
-        </section>
       </section>
     </main>
   );

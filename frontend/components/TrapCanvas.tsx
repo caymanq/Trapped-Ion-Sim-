@@ -10,9 +10,33 @@ type Props = {
 };
 
 function colourFor(electrode: Electrode) {
-  if (electrode.voltage > 0) return "#ef4444";
-  if (electrode.voltage < 0) return "#3b82f6";
-  return "#e5e7eb";
+  if (electrode.voltage > 0) return "#ff4da6";
+  if (electrode.voltage < 0) return "#39f9ff";
+  return "#9eb4c8";
+}
+
+/** Neon heatmap reminiscent of CRT / raylib demos: dark → cyan → magenta */
+function pseudopotFill(t: number) {
+  const u = Math.min(1, Math.max(0, t));
+  if (u < 0.45) {
+    const s = u / 0.45;
+    const r = Math.round(10 + s * 20);
+    const g = Math.round(15 + s * 90);
+    const b = Math.round(28 + s * 120);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  if (u < 0.75) {
+    const s = (u - 0.45) / 0.3;
+    const r = Math.round(30 + s * 120);
+    const g = Math.round(105 + s * 100);
+    const b = Math.round(148 + s * 60);
+    return `rgb(${r}, ${g}, ${b})`;
+  }
+  const s = (u - 0.75) / 0.25;
+  const r = Math.round(150 + s * 105);
+  const g = Math.round(205 - s * 120);
+  const b = Math.round(208 - s * 40);
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 export function TrapCanvas({ electrodes, result, width = 720, height = 520 }: Props) {
@@ -24,14 +48,24 @@ export function TrapCanvas({ electrodes, result, width = 720, height = 520 }: Pr
 
   return (
     <svg className="trap-canvas" viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Trap geometry and pseudopotential">
-      <rect width={width} height={height} fill="#07111f" />
+      <rect width={width} height={height} fill="#020207" />
+
+      {/* Subtle CRT-style vignette */}
+      <defs>
+        <radialGradient id="crt-vignette" cx="50%" cy="45%" r="75%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.03)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.35)" />
+        </radialGradient>
+      </defs>
+      <rect width={width} height={height} fill="url(#crt-vignette)" pointerEvents="none" />
+
       {grid && grid.length > 0 && (
-        <g opacity={0.72}>
+        <g opacity={0.78}>
           {grid.map((row, iy) =>
             row.map((value, ix) => {
               if (ix % 3 !== 0 || iy % 3 !== 0) return null;
-              const t = Math.min(1, Math.max(0, value / maxPseudo));
-              const fill = `rgb(${Math.round(40 + 180 * t)}, ${Math.round(80 + 80 * t)}, ${Math.round(180 - 130 * t)})`;
+              const u = Math.min(1, Math.max(0, value / maxPseudo));
+              const fill = pseudopotFill(u);
               const cellW = width / row.length;
               const cellH = height / grid.length;
               return <rect key={`${ix}-${iy}`} x={ix * cellW} y={iy * cellH} width={cellW + 1} height={cellH + 1} fill={fill} />;
@@ -39,8 +73,11 @@ export function TrapCanvas({ electrodes, result, width = 720, height = 520 }: Pr
           )}
         </g>
       )}
-      <line x1={sx(-domain)} x2={sx(domain)} y1={sy(0)} y2={sy(0)} stroke="#64748b" strokeDasharray="4 6" />
-      <line x1={sx(0)} x2={sx(0)} y1={sy(-domain)} y2={sy(domain)} stroke="#64748b" strokeDasharray="4 6" />
+      {/* Axes wireframe */}
+      <line x1={sx(-domain)} x2={sx(domain)} y1={sy(0)} y2={sy(0)} stroke="rgba(57,249,255,0.35)" strokeWidth="1" strokeDasharray="3 8" />
+      <line x1={sx(0)} x2={sx(0)} y1={sy(-domain)} y2={sy(domain)} stroke="rgba(57,249,255,0.35)" strokeWidth="1" strokeDasharray="3 8" />
+      <rect x="0" y="0" width={width} height={height} fill="none" stroke="rgba(255,77,166,0.15)" strokeWidth="1" />
+
       {electrodes.map((electrode) => {
         const x = sx(electrode.cx - electrode.width / 2);
         const y = sy(electrode.cy + electrode.height / 2);
@@ -50,14 +87,14 @@ export function TrapCanvas({ electrodes, result, width = 720, height = 520 }: Pr
         const d = `M ${x} ${y} Q ${x + inset} ${y + h / 2} ${x} ${y + h} L ${x + w} ${y + h} Q ${x + w - inset} ${y + h / 2} ${x + w} ${y} Z`;
         return (
           <g key={electrode.id}>
-            <path d={d} fill={colourFor(electrode)} stroke="#f8fafc" strokeWidth="1.4" opacity="0.9" />
+            <path d={d} fill={colourFor(electrode)} fillOpacity={0.88} stroke="#f0faff" strokeWidth="1.1" opacity={0.95} />
             <text x={x + w / 2} y={y + h / 2 + 4} textAnchor="middle" className="electrode-label">
               {electrode.label}
             </text>
           </g>
         );
       })}
-      <circle cx={sx(0)} cy={sy(0)} r="6" fill="#facc15" stroke="#111827" strokeWidth="2" />
+      <circle cx={sx(0)} cy={sy(0)} r="6" fill="#ff9f1c" stroke="#39f9ff" strokeWidth="1.5" />
     </svg>
   );
 }
