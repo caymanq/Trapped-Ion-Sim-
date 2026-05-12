@@ -365,3 +365,17 @@ input[type="range"] {
   border: 1px solid rgba(255, 159, 28, 0.4);
   background: rgba(30, 20, 4, 0.5);
 }
+
+/* Confirms the live Vercel build matches git (only set on Vercel). */
+.deploy-stamp {
+  position: fixed;
+  right: 0.75rem;
+  bottom: 0.5rem;
+  z-index: 50;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(57, 249, 255, 0.45);
+  pointer-events: none;
+  user-select: none;
+}

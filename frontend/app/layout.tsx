@@ -20,9 +20,18 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const deploySha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
+
   return (
     <html lang="en">
-      <body className={`${pixel.variable} ${terminal.variable}`}>{children}</body>
+      <body className={`${pixel.variable} ${terminal.variable}`}>
+        {children}
+        {deploySha ? (
+          <div className="deploy-stamp" title="Vercel deployment git SHA (first 7 hex digits)">
+            deploy {deploySha}
+          </div>
+        ) : null}
+      </body>
     </html>
   );
 }
