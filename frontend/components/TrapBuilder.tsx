@@ -86,19 +86,19 @@ export function TrapBuilder() {
           </div>
           <p className="legend">
             <span>
-              <span className="legend-dot" style={{ background: "#ff4da6" }} />
+              <span className="legend-dot" style={{ background: "#74606e" }} />
               RF +
             </span>
             <span>
-              <span className="legend-dot" style={{ background: "#39f9ff" }} />
+              <span className="legend-dot" style={{ background: "#5f6f7d" }} />
               RF −
             </span>
             <span>
-              <span className="legend-dot" style={{ background: "#9eb4c8" }} />
+              <span className="legend-dot" style={{ background: "#6f7780" }} />
               Ground
             </span>
             <span>
-              <span className="legend-dot" style={{ background: "#ff9f1c", border: "1px solid #39f9ff" }} />
+              <span className="legend-dot" style={{ background: "#8f866f", border: "1px solid rgba(120,130,145,0.5)" }} />
               Ion / null hint
             </span>
           </p>

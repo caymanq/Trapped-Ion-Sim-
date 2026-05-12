@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Press_Start_2P, VT323 } from "next/font/google";
+import { Cinzel } from "next/font/google";
 import "./styles.css";
 
-const pixel = Press_Start_2P({
+const cinzel = Cinzel({
   subsets: ["latin"],
-  weight: "400",
-  variable: "--font-pixel"
-});
-
-const terminal = VT323({
-  subsets: ["latin"],
-  weight: "400",
-  variable: "--font-terminal"
+  weight: ["400", "500", "600"],
+  variable: "--font-cinzel"
 });
 
 export const metadata: Metadata = {
@@ -24,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   return (
     <html lang="en">
-      <body className={`${pixel.variable} ${terminal.variable}`}>
+      <body className={cinzel.variable}>
         {children}
         {deploySha ? (
           <div className="deploy-stamp" title="Vercel deployment git SHA (first 7 hex digits)">

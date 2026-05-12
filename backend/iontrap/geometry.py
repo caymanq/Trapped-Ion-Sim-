@@ -179,10 +179,10 @@ def electrode_mask(electrode: Electrode, x: np.ndarray, y: np.ndarray) -> np.nda
 
     half_w = electrode.width / 2.0
     curve = np.clip(electrode.curvature, 0.0, 1.0)
-    # Slider bends the vertical sidewalls inward near the electrode center while
-    # preserving endpoint anchors. This gives the solver a smooth hyperbolic-like
-    # family without changing the preset edge coordinates at slider=0.
-    local_half_w = half_w * (1.0 - 0.35 * curve * (1.0 - eta**2))
+    # Convex sidewall protrusion toward the trap centre (RF null): widen the
+    # conductor at mid-height so each vertical boundary bows toward x=0, with
+    # corners fixed at η=±1—mirrors hyperbolic electrodes whose tip points inward.
+    local_half_w = half_w * (1.0 + 0.35 * curve * (1.0 - eta**2))
     mask = inside_y & (np.abs(x_rel) <= local_half_w)
     if not mask.any():
         # Thin electrodes can disappear on coarse grids. Pin them to the nearest
