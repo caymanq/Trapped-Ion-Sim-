@@ -410,6 +410,78 @@ applicable.
   set of trap geometries.}
 \end{figure}
 
+\subsection{Solid-Angle Anharmonicity for Sketch Traps}
+
+In addition to the 2-D finite-difference cross-section solver, the notebook
+includes a gridless \textbf{3-D half-space} evaluator in
+\texttt{solid\_angle\_trap.py}. This implements the surface-electrode Green's
+function form
+\[
+  \phi(x,y,z)
+  =
+  \frac{z}{2\pi}
+  \iint_S
+  \frac{V(x',y')}{\left[(x-x')^2+(y-y')^2+z^2\right]^{3/2}}
+  \,\mathrm{d}x'\,\mathrm{d}y',
+\]
+which, for a polygonal electrode held at voltage \(V\), reduces to
+\[
+  \phi_{\mathrm{electrode}}
+  =
+  \frac{V}{2\pi}\,\Omega_{\mathrm{polygon}},
+\]
+where \(\Omega\) is the solid angle subtended by the polygon as viewed from the
+field point. The implementation uses the van Oosterom--Strackee edge sum on
+unit vectors from the field point to each vertex.
+
+\paragraph{Coordinate map.}
+Sketch coordinates are interpreted as positions \emph{in the chip plane}
+\(z=0\):
+\[
+  (x_{\mathrm{sketch}},y_{\mathrm{sketch}})
+  \longrightarrow
+  (x,y,0).
+\]
+The ion sits at height \(z_{\mathrm{ion}}\) above that plane, typically
+\(z_{\mathrm{ion}}=30~\mu\mathrm{m}\). This differs from the FDM sketch sweep,
+which places the nominal ion at \(y=30~\mu\mathrm{m}\) in the same 2-D
+cross-section as the electrodes. The solid-angle path is the correct model when
+all electrodes are treated as coplanar on the substrate and the ion is
+\emph{above} the surface.
+
+\paragraph{Pseudopotential and multipoles.}
+At fixed \(z=z_{\mathrm{ion}}\), the code evaluates \(\phi_{\mathrm{rf}}\) on a
+planar grid, forms
+\[
+  \Phi_{\mathrm{ps}}
+  =
+  \frac{q}{4m\Omega^2}
+  \left(V_{\mathrm{RF}}^2|\nabla\phi_{\mathrm{rf}}|^2\right),
+\]
+finds the local minimum in the chip plane near \((0,0)\), subtracts
+\(\Phi_{\min}\), and fits the same circular multipoles as above---centered on
+the \textbf{refined null}, not the initial guess. Anharmonicity is reported as
+\(p_n/p_2\) for \(n=3,\ldots,8\) on both \(\phi_{\mathrm{rf}}\) and
+\(\Phi_{\mathrm{ps}}\). Optional Cartesian Taylor coefficients (e.g.\
+\(c_{40}/c_{20}^2\)) are stored for intuition.
+
+\paragraph{Outputs.}
+\begin{itemize}
+  \item \texttt{csv/sketch\_trap\_anharmonicity\_solid\_angle.csv}
+  \item \texttt{pngs/sketch\_trap\_anharmonicity\_vs\_theta.png}
+\end{itemize}
+Large \(\Phi_{\mathrm{ps}}\) ratios \(p_4/p_2\), \(p_6/p_2\), etc.\ indicate
+stronger deviation from an ideal quadrupole and therefore stronger
+anharmonicity. The coplanar model does not include raised or trenched
+electrodes out of the plane.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{pngs/sketch_trap_anharmonicity_vs_theta.png}
+  \caption{Solid-angle pseudopotential multipole ratios \(p_n/p_2\) versus inner
+  RF angle \(\theta\) for the five sketch geometries.}
+\end{figure}
+
 \newpage
 
 \section{Trap Depth and Profile Plots}
